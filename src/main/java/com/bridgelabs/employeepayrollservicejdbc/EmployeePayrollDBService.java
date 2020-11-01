@@ -48,5 +48,40 @@ public class EmployeePayrollDBService {
 			throw new EmployeePayrollException("Unable to read from database");
 		}
 	}
+
+	public List<EmployeePayrollData> getEmployeePayrollDataFromDB(String name) throws EmployeePayrollException {
+		String sql=String.format("select * from payroll_data where name='%s'",name);
+		List<EmployeePayrollData> employeePayrollList=new ArrayList<EmployeePayrollData>();
+		try (Connection connection=this.getConnection()){
+			Statement statement=connection.createStatement();
+			ResultSet resultSet=statement.executeQuery(sql);
+			while(resultSet.next()) {
+				int id=resultSet.getInt("id");
+				String objectname=resultSet.getString("name");
+				String gender=resultSet.getString("gender");
+				double salary=resultSet.getDouble("salary");
+				LocalDate start=resultSet.getDate("start").toLocalDate();
+				employeePayrollList.add(new EmployeePayrollData(id, objectname, salary, gender, start));
+			}
+			return employeePayrollList;
+		} catch (SQLException e) {
+			throw new EmployeePayrollException("Unable to read from database");
+		}
+	}
+	
+	public int updateEmployeeData(String name, double salary) throws EmployeePayrollException {
+		return this.updateEmployeePayrollDataUsingStatement(name, salary);
+	}
+
+	private int updateEmployeePayrollDataUsingStatement(String name, double salary) throws EmployeePayrollException {
+		String sql=String.format("update payroll_data set salary=%.2f where name='%s'",salary,name);
+		try (Connection connection=this.getConnection()){
+			Statement statement=connection.createStatement();
+			int rowsAffected=statement.executeUpdate(sql);
+			return rowsAffected;
+		} catch (SQLException e) {
+			throw new EmployeePayrollException("Unable To update data in database");
+		}
+	}
 			
 }

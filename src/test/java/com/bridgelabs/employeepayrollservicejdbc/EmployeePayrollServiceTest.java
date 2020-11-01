@@ -27,4 +27,19 @@ public class EmployeePayrollServiceTest {
 			logger.info(e.getMessage());
 		}
 	}
+	
+	@Test
+	public void givenEmployeePayrollDataWhenUpdatedShouldMatchWithDB() {
+		try {
+			this.employeePayrollService.getEmployeePayrollData();
+			String name="Terissa";
+			double salary= 3000000.00;
+			boolean result= this.employeePayrollService.updateEmployeeData(name,salary);
+			Assert.assertTrue(result);
+			Assert.assertTrue(this.employeePayrollService.checkIfEmployeePayrollListInSyncWithDb(name));
+		} catch (EmployeePayrollException e) {
+			logger.info(e.getMessage());
+		}
+		
+	}
 }
