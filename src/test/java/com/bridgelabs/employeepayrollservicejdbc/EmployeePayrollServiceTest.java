@@ -1,20 +1,20 @@
 package com.bridgelabs.employeepayrollservicejdbc;
 
-import static org.junit.Assert.assertTrue;
-
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
-/**
- * Unit test for simple App.
- */
-public class EmployeePayrollServiceTest 
-{
-    /**
-     * Rigorous Test :-)
-     */
-    @Test
-    public void shouldAnswerWithTrue()
-    {
-        assertTrue( true );
-    }
+public class EmployeePayrollServiceTest {
+	public EmployeePayrollService employeePayrollService;
+	
+	@Before
+	public void setUp() {
+		this.employeePayrollService=new EmployeePayrollService();
+	}
+
+	@Test
+	public void connectionWhenEstablishedShouldReturnTrue() {
+		boolean result= this.employeePayrollService.establishConnection();
+		Assert.assertTrue(result);
+	}
 }
