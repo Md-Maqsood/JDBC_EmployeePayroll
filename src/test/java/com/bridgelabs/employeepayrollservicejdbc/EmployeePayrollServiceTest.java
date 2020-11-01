@@ -1,5 +1,6 @@
 package com.bridgelabs.employeepayrollservicejdbc;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
@@ -56,5 +57,21 @@ public class EmployeePayrollServiceTest {
 			logger.info(e.getMessage());
 		}
 
+	}
+
+	@Test
+	public void givenEmployeePayrollDataWhenRetrievedBasedOnStartDateShouldReturnProperResult() {
+		try {
+			this.employeePayrollService.getEmployeePayrollData();
+			LocalDate startDate = LocalDate.parse("2018-01-31");
+			LocalDate endDate = LocalDate.parse("2019-01-31");
+			List<EmployeePayrollData> matchingRecords = this.employeePayrollService
+					.getEmployeePayrollDataByStartDate(startDate, endDate);
+			Assert.assertEquals(1, matchingRecords.size());
+			Assert.assertEquals(matchingRecords.get(0),
+					this.employeePayrollService.getEmployeePayrollDataFromList("Terissa"));
+		} catch (EmployeePayrollException e) {
+			logger.info(e.getMessage());
+		}
 	}
 }

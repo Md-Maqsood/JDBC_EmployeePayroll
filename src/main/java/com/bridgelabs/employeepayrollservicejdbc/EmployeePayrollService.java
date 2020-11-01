@@ -1,5 +1,6 @@
 package com.bridgelabs.employeepayrollservicejdbc;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class EmployeePayrollService {
@@ -36,5 +37,10 @@ public class EmployeePayrollService {
 			return true;
 		}
 		return false;
+	}
+
+	public List<EmployeePayrollData> getEmployeePayrollDataByStartDate(LocalDate startDate, LocalDate endDate)
+			throws EmployeePayrollException {
+		return this.employeePayrollDBService.getEmployeePayrollDataByStartDate(startDate, endDate);
 	}
 }

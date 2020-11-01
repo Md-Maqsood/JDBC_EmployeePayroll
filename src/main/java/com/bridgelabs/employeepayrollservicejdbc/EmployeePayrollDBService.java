@@ -136,4 +136,18 @@ public class EmployeePayrollDBService {
 		}
 	}
 
+	public List<EmployeePayrollData> getEmployeePayrollDataByStartDate(LocalDate startDate, LocalDate endDate)
+			throws EmployeePayrollException {
+		String sql = String.format(
+				"select * from payroll_data where start between cast('%s' as date) and cast('%s' as date);",
+				startDate.toString(), endDate.toString());
+		try (Connection connection = this.getConnection()) {
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery(sql);
+			return this.getEmployeePayrollListFromResultset(resultSet);
+		} catch (SQLException e) {
+			throw new EmployeePayrollException("Unable to get connection");
+		}
+	}
+
 }
