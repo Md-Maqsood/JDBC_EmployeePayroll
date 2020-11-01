@@ -7,7 +7,7 @@ public class EmployeePayrollService {
 	private List<EmployeePayrollData> employeePayrollList;
 	
 	public EmployeePayrollService() {
-		this.employeePayrollDBService = new EmployeePayrollDBService();
+		this.employeePayrollDBService = EmployeePayrollDBService.getInstance();
 	}
 	
 	public List<EmployeePayrollData> getEmployeePayrollData() throws EmployeePayrollException{
