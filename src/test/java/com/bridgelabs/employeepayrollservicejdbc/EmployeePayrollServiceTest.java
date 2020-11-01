@@ -1,11 +1,16 @@
 package com.bridgelabs.employeepayrollservicejdbc;
 
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class EmployeePayrollServiceTest {
 	public EmployeePayrollService employeePayrollService;
+	private static final Logger logger=LogManager.getFormatterLogger(EmployeePayrollServiceTest.class);
 	
 	@Before
 	public void setUp() {
@@ -13,8 +18,13 @@ public class EmployeePayrollServiceTest {
 	}
 
 	@Test
-	public void connectionWhenEstablishedShouldReturnTrue() {
-		boolean result= this.employeePayrollService.establishConnection();
-		Assert.assertTrue(result);
+	public void payrollDataWhenReadFromDatabaseShouldReturnCorrectList() {
+		List<EmployeePayrollData> employeePayrollList;
+		try {
+			employeePayrollList = this.employeePayrollService.getEmployeePayrollData();
+			Assert.assertEquals(3,employeePayrollList.size());
+		} catch (EmployeePayrollException e) {
+			logger.info(e.getMessage());
+		}
 	}
 }
