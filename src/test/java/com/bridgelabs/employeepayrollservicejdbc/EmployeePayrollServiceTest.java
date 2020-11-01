@@ -10,11 +10,11 @@ import org.junit.Test;
 
 public class EmployeePayrollServiceTest {
 	public EmployeePayrollService employeePayrollService;
-	private static final Logger logger=LogManager.getFormatterLogger(EmployeePayrollServiceTest.class);
-	
+	private static final Logger logger = LogManager.getFormatterLogger(EmployeePayrollServiceTest.class);
+
 	@Before
 	public void setUp() {
-		this.employeePayrollService=new EmployeePayrollService();
+		this.employeePayrollService = new EmployeePayrollService();
 	}
 
 	@Test
@@ -22,39 +22,39 @@ public class EmployeePayrollServiceTest {
 		List<EmployeePayrollData> employeePayrollList;
 		try {
 			employeePayrollList = this.employeePayrollService.getEmployeePayrollData();
-			Assert.assertEquals(3,employeePayrollList.size());
+			Assert.assertEquals(3, employeePayrollList.size());
 		} catch (EmployeePayrollException e) {
 			logger.info(e.getMessage());
 		}
 	}
-	
+
 	@Test
 	public void givenEmployeePayrollDataWhenUpdatedShouldMatchWithDB() {
 		try {
 			this.employeePayrollService.getEmployeePayrollData();
-			String name="Terissa";
-			double salary= 3000000.00;
-			boolean result= this.employeePayrollService.updateEmployeeData(name,salary);
+			String name = "Terissa";
+			double salary = 3000000.00;
+			boolean result = this.employeePayrollService.updateEmployeeData(name, salary);
 			Assert.assertTrue(result);
 			Assert.assertTrue(this.employeePayrollService.checkIfEmployeePayrollListInSyncWithDb(name));
 		} catch (EmployeePayrollException e) {
 			logger.info(e.getMessage());
 		}
-		
+
 	}
-	
+
 	@Test
 	public void givenEmployeePayrollDataWhenUpdatedUsingPreparedStatementShouldMatchWithDB() {
 		try {
 			this.employeePayrollService.getEmployeePayrollData();
-			String name="Terissa";
-			double salary= 3000000.00;
-			boolean result= this.employeePayrollService.updateEmployeeData(name,salary);
+			String name = "Terissa";
+			double salary = 3000000.00;
+			boolean result = this.employeePayrollService.updateEmployeeData(name, salary);
 			Assert.assertTrue(result);
 			Assert.assertTrue(this.employeePayrollService.checkIfEmployeePayrollListInSyncWithDb(name));
 		} catch (EmployeePayrollException e) {
 			logger.info(e.getMessage());
 		}
-		
+
 	}
 }
