@@ -74,4 +74,16 @@ public class EmployeePayrollServiceTest {
 			logger.info(e.getMessage());
 		}
 	}
+	
+	@Test
+	public void givenEmployeePayrollDataWhenMadeComputationsShouldReturnProperResults() {
+		try {
+			this.employeePayrollService.getEmployeePayrollData();
+			ComputationResult result=this.employeePayrollService.makeComputations(ComputationType.AVG);
+			Assert.assertEquals(2000000.0, result.maleResult, 0.0);
+			Assert.assertEquals(3000000.0, result.femaleResult, 0.0);
+		} catch (EmployeePayrollException e) {
+			logger.info(e.getMessage());
+		}
+	}
 }

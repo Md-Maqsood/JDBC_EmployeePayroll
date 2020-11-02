@@ -150,4 +150,21 @@ public class EmployeePayrollDBService {
 		}
 	}
 
+	public ComputationResult makeComputations(ComputationType computationType) throws EmployeePayrollException {
+		String sql=String.format("select gender, %s(salary) from payroll_data group by gender",computationType.toString());
+		try(Connection connection=this.getConnection()){
+			Statement statement=connection.createStatement();
+			ResultSet resultSet=statement.executeQuery(sql);
+			double maleComputationResult=0.0;
+			double femaleComputationResult=0.0;
+			while(resultSet.next()) {
+				if(resultSet.getString("gender").equals("M")) maleComputationResult=resultSet.getDouble("salary");
+				else femaleComputationResult=resultSet.getDouble("salary");
+			}
+			return new ComputationResult(computationType, femaleComputationResult, maleComputationResult);
+		} catch (SQLException e) {
+			throw new EmployeePayrollException("Unable to use resultset");
+		}
+	}
+
 }

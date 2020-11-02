@@ -43,4 +43,8 @@ public class EmployeePayrollService {
 			throws EmployeePayrollException {
 		return this.employeePayrollDBService.getEmployeePayrollDataByStartDate(startDate, endDate);
 	}
+
+	public ComputationResult makeComputations(ComputationType computationType) throws EmployeePayrollException {
+		return this.employeePayrollDBService.makeComputations(computationType);
+	}
 }
