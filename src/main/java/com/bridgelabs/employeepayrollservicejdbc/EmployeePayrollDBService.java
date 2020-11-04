@@ -213,7 +213,7 @@ public class EmployeePayrollDBService {
 				e1.printStackTrace();
 			}
 			throw new EmployeePayrollException("Unable to add employee to payroll_data table");
-		}finally {
+		} finally {
 			try {
 				connection.close();
 			} catch (SQLException e) {

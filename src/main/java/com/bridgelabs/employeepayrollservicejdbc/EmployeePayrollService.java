@@ -48,10 +48,12 @@ public class EmployeePayrollService {
 		return this.employeePayrollDBService.makeComputations(computationType);
 	}
 
-	public void addEmployeeToDatabase(String name, String gender, double salary, LocalDate start) throws EmployeePayrollException {
-		EmployeePayrollData employeePayrollData=this.employeePayrollDBService.addEmployeeToDataBase(name, gender, salary, start);
-		if(employeePayrollData==null) {
-		throw new EmployeePayrollException("Unable to add employee");
+	public void addEmployeeToDatabase(String name, String gender, double salary, LocalDate start)
+			throws EmployeePayrollException {
+		EmployeePayrollData employeePayrollData = this.employeePayrollDBService.addEmployeeToDataBase(name, gender,
+				salary, start);
+		if (employeePayrollData == null) {
+			throw new EmployeePayrollException("Unable to add employee");
 		}
 		this.employeePayrollList.add(employeePayrollData);
 	}
