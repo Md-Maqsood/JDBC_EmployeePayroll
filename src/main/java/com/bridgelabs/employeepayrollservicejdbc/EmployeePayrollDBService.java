@@ -151,15 +151,15 @@ public class EmployeePayrollDBService {
 	}
 
 	public ComputationResult makeComputations(ComputationType computationType) throws EmployeePayrollException {
-		String sql=String.format("select gender, %s(salary) from payroll_data group by gender",computationType.toString());
+		String sql=String.format("select gender, %s(salary) as result from payroll_data group by gender",computationType.toString());
 		try(Connection connection=this.getConnection()){
 			Statement statement=connection.createStatement();
 			ResultSet resultSet=statement.executeQuery(sql);
 			double maleComputationResult=0.0;
 			double femaleComputationResult=0.0;
 			while(resultSet.next()) {
-				if(resultSet.getString("gender").equals("M")) maleComputationResult=resultSet.getDouble("salary");
-				else femaleComputationResult=resultSet.getDouble("salary");
+				if(resultSet.getString("gender").equals("M")) maleComputationResult=resultSet.getDouble("result");
+				else femaleComputationResult=resultSet.getDouble("result");
 			}
 			return new ComputationResult(computationType, femaleComputationResult, maleComputationResult);
 		} catch (SQLException e) {
@@ -167,4 +167,14 @@ public class EmployeePayrollDBService {
 		}
 	}
 
+	public int addEmployeeToDataBase(String name, String gender, double salary, LocalDate start) throws EmployeePayrollException {
+		String sql = String.format("insert into payroll_data (name,gender,salary,start) values ('%s','%s',%.2f,'%s')",name, gender, salary, start.toString());
+		try(Connection connection=this.getConnection()){
+			Statement statement=connection.createStatement();
+			int rowsAffected=statement.executeUpdate(sql);
+			return rowsAffected;
+		} catch (SQLException e) {
+			throw new EmployeePayrollException("Unable to add employee to payroll_data table");
+		}
+	}
 }

@@ -47,4 +47,12 @@ public class EmployeePayrollService {
 	public ComputationResult makeComputations(ComputationType computationType) throws EmployeePayrollException {
 		return this.employeePayrollDBService.makeComputations(computationType);
 	}
+
+	public void addEmployeeToDatabase(String name, String gender, double salary, LocalDate start) throws EmployeePayrollException {
+		int rowsAffected=this.employeePayrollDBService.addEmployeeToDataBase(name, gender, salary, start);
+		if(rowsAffected==0) {
+		throw new EmployeePayrollException("Unable to add employee");
+		}
+		this.employeePayrollList.add(this.employeePayrollDBService.getEmployeePayrollDataFromDB(name).get(0));
+	}
 }

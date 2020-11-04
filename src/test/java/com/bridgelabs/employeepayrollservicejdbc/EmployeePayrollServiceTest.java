@@ -23,7 +23,7 @@ public class EmployeePayrollServiceTest {
 		List<EmployeePayrollData> employeePayrollList;
 		try {
 			employeePayrollList = this.employeePayrollService.getEmployeePayrollData();
-			Assert.assertEquals(3, employeePayrollList.size());
+			Assert.assertEquals(4, employeePayrollList.size());
 		} catch (EmployeePayrollException e) {
 			logger.info(e.getMessage());
 		}
@@ -58,22 +58,6 @@ public class EmployeePayrollServiceTest {
 		}
 
 	}
-
-	@Test
-	public void givenEmployeePayrollDataWhenRetrievedBasedOnStartDateShouldReturnProperResult() {
-		try {
-			this.employeePayrollService.getEmployeePayrollData();
-			LocalDate startDate = LocalDate.parse("2018-01-31");
-			LocalDate endDate = LocalDate.parse("2019-01-31");
-			List<EmployeePayrollData> matchingRecords = this.employeePayrollService
-					.getEmployeePayrollDataByStartDate(startDate, endDate);
-			Assert.assertEquals(1, matchingRecords.size());
-			Assert.assertEquals(matchingRecords.get(0),
-					this.employeePayrollService.getEmployeePayrollDataFromList("Terissa"));
-		} catch (EmployeePayrollException e) {
-			logger.info(e.getMessage());
-		}
-	}
 	
 	@Test
 	public void givenEmployeePayrollDataWhenMadeComputationsShouldReturnProperResults() {
@@ -83,6 +67,21 @@ public class EmployeePayrollServiceTest {
 			Assert.assertEquals(2000000.0, result.maleResult, 0.0);
 			Assert.assertEquals(3000000.0, result.femaleResult, 0.0);
 		} catch (EmployeePayrollException e) {
+			logger.info(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void givenemployeeWhenAddedToDataBaseAndCheckedShouldBepresent() {
+		try {
+			this.employeePayrollService.getEmployeePayrollData();
+			String name="Mark";
+			double salary=2000000.0;
+			String gender="M";
+			LocalDate start=LocalDate.parse("2018-01-31");
+			this.employeePayrollService.addEmployeeToDatabase(name,gender,salary,start);
+			Assert.assertTrue(this.employeePayrollService.checkIfEmployeePayrollListInSyncWithDb(name));
+		}catch(EmployeePayrollException e) {
 			logger.info(e.getMessage());
 		}
 	}
