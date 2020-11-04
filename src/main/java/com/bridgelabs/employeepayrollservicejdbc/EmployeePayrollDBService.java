@@ -151,15 +151,18 @@ public class EmployeePayrollDBService {
 	}
 
 	public ComputationResult makeComputations(ComputationType computationType) throws EmployeePayrollException {
-		String sql=String.format("select gender, %s(salary) as result from payroll_data group by gender",computationType.toString());
-		try(Connection connection=this.getConnection()){
-			Statement statement=connection.createStatement();
-			ResultSet resultSet=statement.executeQuery(sql);
-			double maleComputationResult=0.0;
-			double femaleComputationResult=0.0;
-			while(resultSet.next()) {
-				if(resultSet.getString("gender").equals("M")) maleComputationResult=resultSet.getDouble("result");
-				else femaleComputationResult=resultSet.getDouble("result");
+		String sql = String.format("select gender, %s(salary) as result from payroll_data group by gender",
+				computationType.toString());
+		try (Connection connection = this.getConnection()) {
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery(sql);
+			double maleComputationResult = 0.0;
+			double femaleComputationResult = 0.0;
+			while (resultSet.next()) {
+				if (resultSet.getString("gender").equals("M"))
+					maleComputationResult = resultSet.getDouble("result");
+				else
+					femaleComputationResult = resultSet.getDouble("result");
 			}
 			return new ComputationResult(computationType, femaleComputationResult, maleComputationResult);
 		} catch (SQLException e) {
@@ -167,14 +170,55 @@ public class EmployeePayrollDBService {
 		}
 	}
 
-	public int addEmployeeToDataBase(String name, String gender, double salary, LocalDate start) throws EmployeePayrollException {
-		String sql = String.format("insert into payroll_data (name,gender,salary,start) values ('%s','%s',%.2f,'%s')",name, gender, salary, start.toString());
-		try(Connection connection=this.getConnection()){
-			Statement statement=connection.createStatement();
-			int rowsAffected=statement.executeUpdate(sql);
-			return rowsAffected;
+	public EmployeePayrollData addEmployeeToDataBase(String name, String gender, double salary, LocalDate start)
+			throws EmployeePayrollException {
+		double basic_pay = salary;
+		double dedeuctions = 0.2 * basic_pay;
+		double taxable_pay = basic_pay - dedeuctions;
+		double tax = 0.1 * taxable_pay;
+		double net_pay = basic_pay - tax;
+		int employeeId = 0;
+		EmployeePayrollData employeePayrollData = null;
+		Connection connection = this.getConnection();
+		try {
+			connection.setAutoCommit(false);
+			String sql1 = String.format(
+					"insert into payroll_data (name,gender,salary,start) values ('%s','%s',%.2f,'%s')", name, gender,
+					salary, start.toString());
+			Statement statement1 = connection.createStatement();
+			int rowsAffected = statement1.executeUpdate(sql1, statement1.RETURN_GENERATED_KEYS);
+			if (rowsAffected == 1) {
+				ResultSet resultSet = statement1.getGeneratedKeys();
+				if (resultSet.next())
+					employeeId = resultSet.getInt(1);
+			} else {
+				throw new EmployeePayrollException("Unable to add employee to payroll_data");
+			}
+
+			String sql2 = String.format("insert into payroll_details values (%s,%s,%s,%s,%s,%s)", employeeId, basic_pay,
+					dedeuctions, taxable_pay, tax, net_pay);
+			Statement statement2 = connection.createStatement();
+			rowsAffected = statement2.executeUpdate(sql2);
+			if (rowsAffected == 1) {
+				employeePayrollData = new EmployeePayrollData(employeeId, name, salary, gender);
+			} else {
+				throw new EmployeePayrollException("Unable to add employee to payroll_data");
+			}
+			connection.commit();
+			return employeePayrollData;
 		} catch (SQLException e) {
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
 			throw new EmployeePayrollException("Unable to add employee to payroll_data table");
+		}finally {
+			try {
+				connection.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 }

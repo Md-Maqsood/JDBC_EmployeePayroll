@@ -49,10 +49,10 @@ public class EmployeePayrollService {
 	}
 
 	public void addEmployeeToDatabase(String name, String gender, double salary, LocalDate start) throws EmployeePayrollException {
-		int rowsAffected=this.employeePayrollDBService.addEmployeeToDataBase(name, gender, salary, start);
-		if(rowsAffected==0) {
+		EmployeePayrollData employeePayrollData=this.employeePayrollDBService.addEmployeeToDataBase(name, gender, salary, start);
+		if(employeePayrollData==null) {
 		throw new EmployeePayrollException("Unable to add employee");
 		}
-		this.employeePayrollList.add(this.employeePayrollDBService.getEmployeePayrollDataFromDB(name).get(0));
+		this.employeePayrollList.add(employeePayrollData);
 	}
 }
