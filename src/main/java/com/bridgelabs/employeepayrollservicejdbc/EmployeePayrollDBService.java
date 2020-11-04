@@ -95,7 +95,9 @@ public class EmployeePayrollDBService {
 	}
 
 	private int updateEmployeePayrollDataUsingStatement(String name, double salary) throws EmployeePayrollException {
-		String sql = String.format("update payroll_details set net_pay=%.2f where employee_id=(select employee_id from payroll_data where name='%s')", salary, name);
+		String sql = String.format(
+				"update payroll_details set net_pay=%.2f where employee_id=(select employee_id from payroll_data where name='%s')",
+				salary, name);
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
 			int rowsAffected = statement.executeUpdate(sql);
@@ -155,7 +157,8 @@ public class EmployeePayrollDBService {
 	}
 
 	public ComputationResult makeComputations(ComputationType computationType) throws EmployeePayrollException {
-		String sql = String.format("select gender, %s(net_pay) as result from payroll_data join payroll_details on payroll_data.employee_id=payroll_details.employee_id group by gender",
+		String sql = String.format(
+				"select gender, %s(net_pay) as result from payroll_data join payroll_details on payroll_data.employee_id=payroll_details.employee_id group by gender",
 				computationType.toString());
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
@@ -174,26 +177,26 @@ public class EmployeePayrollDBService {
 		}
 	}
 
-	public EmployeePayrollData addEmployeeToDataBase(String company, String address, String phone_number, String name, String gender, double salary, LocalDate start)
-			throws EmployeePayrollException {
+	public EmployeePayrollData addEmployeeToDataBase(String company, String address, String phone_number, String name,
+			String gender, double salary, LocalDate start) throws EmployeePayrollException {
 		double basic_pay = salary;
 		double dedeuctions = 0.2 * basic_pay;
 		double taxable_pay = basic_pay - dedeuctions;
 		double tax = 0.1 * taxable_pay;
 		double net_pay = basic_pay - tax;
 		int employeeId = 0;
-		int companyId=0;
+		int companyId = 0;
 		EmployeePayrollData employeePayrollData = null;
 		Connection connection = this.getConnection();
 		try {
 			connection.setAutoCommit(false);
-			Statement statement0=connection.createStatement();
-			ResultSet resultSet=statement0.executeQuery(String.format("select company_id from company where company_name='%s'",company));
+			Statement statement0 = connection.createStatement();
+			ResultSet resultSet = statement0
+					.executeQuery(String.format("select company_id from company where company_name='%s'", company));
 			if (resultSet.next()) {
-				companyId=resultSet.getInt("company_id");
-			}else {
-				String sql0 = String.format(
-						"insert into company (company_name) values ('%s')", company);
+				companyId = resultSet.getInt("company_id");
+			} else {
+				String sql0 = String.format("insert into company (company_name) values ('%s')", company);
 				Statement statement00 = connection.createStatement();
 				int rowsAffected = statement00.executeUpdate(sql0, statement00.RETURN_GENERATED_KEYS);
 				if (rowsAffected == 1) {
@@ -205,8 +208,8 @@ public class EmployeePayrollDBService {
 				}
 			}
 			String sql1 = String.format(
-					"insert into payroll_data (name,gender,start,company_id, address, phone_number) values ('%s','%s','%s',%s,'%s','%s')", name, gender,
-					start.toString(),companyId,address,phone_number);
+					"insert into payroll_data (name,gender,start,company_id, address, phone_number) values ('%s','%s','%s',%s,'%s','%s')",
+					name, gender, start.toString(), companyId, address, phone_number);
 			Statement statement1 = connection.createStatement();
 			int rowsAffected = statement1.executeUpdate(sql1, statement1.RETURN_GENERATED_KEYS);
 			if (rowsAffected == 1) {
@@ -222,7 +225,8 @@ public class EmployeePayrollDBService {
 			Statement statement2 = connection.createStatement();
 			rowsAffected = statement2.executeUpdate(sql2);
 			if (rowsAffected == 1) {
-				employeePayrollData = new EmployeePayrollData(employeeId, name, net_pay, gender, company, address, phone_number, start);
+				employeePayrollData = new EmployeePayrollData(employeeId, name, net_pay, gender, company, address,
+						phone_number, start);
 			} else {
 				throw new EmployeePayrollException("Unable to add employee to payroll_data");
 			}
