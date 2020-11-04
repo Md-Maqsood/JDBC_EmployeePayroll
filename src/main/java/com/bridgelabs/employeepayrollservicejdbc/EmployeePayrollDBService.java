@@ -45,7 +45,7 @@ public class EmployeePayrollDBService {
 	}
 
 	public List<EmployeePayrollData> readData() throws EmployeePayrollException {
-		String sql = "select * from payroll_data";
+		String sql = "select payroll_data.employee_id,name, gender, net_pay, start, address, phone_number, company_name from payroll_data join company on payroll_data.company_id=company.company_id join payroll_details on payroll_data.employee_id=payroll_details.employee_id";
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
 			ResultSet resultSet = statement.executeQuery(sql);
@@ -60,12 +60,16 @@ public class EmployeePayrollDBService {
 		List<EmployeePayrollData> employeePayrollList = new ArrayList<EmployeePayrollData>();
 		try {
 			while (resultSet.next()) {
-				int id = resultSet.getInt("id");
+				int id = resultSet.getInt("employee_id");
 				String objectname = resultSet.getString("name");
 				String gender = resultSet.getString("gender");
-				double salary = resultSet.getDouble("salary");
+				double salary = resultSet.getDouble("net_pay");
 				LocalDate start = resultSet.getDate("start").toLocalDate();
-				employeePayrollList.add(new EmployeePayrollData(id, objectname, salary, gender, start));
+				String address = resultSet.getString("address");
+				String phone_number = resultSet.getString("phone_number");
+				String company = resultSet.getString("company_name");
+				employeePayrollList.add(
+						new EmployeePayrollData(id, objectname, salary, gender, company, address, phone_number, start));
 			}
 			return employeePayrollList;
 		} catch (SQLException e) {
@@ -91,7 +95,7 @@ public class EmployeePayrollDBService {
 	}
 
 	private int updateEmployeePayrollDataUsingStatement(String name, double salary) throws EmployeePayrollException {
-		String sql = String.format("update payroll_data set salary=%.2f where name='%s'", salary, name);
+		String sql = String.format("update payroll_details set net_pay=%.2f where employee_id=(select employee_id from payroll_data where name='%s')", salary, name);
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
 			int rowsAffected = statement.executeUpdate(sql);
@@ -119,7 +123,7 @@ public class EmployeePayrollDBService {
 	private void prepareStatementForEmployeePayrollUpdate() throws EmployeePayrollException {
 		try {
 			Connection connection = this.getConnection();
-			String sql = "update payroll_data set salary=? where name=?";
+			String sql = "update payroll_details set net_pay=? where employee_id=(select employee_id from payroll_data where name=?)";
 			this.preparedStatementForUpdate = connection.prepareStatement(sql);
 		} catch (SQLException e) {
 			throw new EmployeePayrollException("Unable to prepare statement");
@@ -129,7 +133,7 @@ public class EmployeePayrollDBService {
 	private void prepareStatementForEmployeePayrollDataRetrieval() throws EmployeePayrollException {
 		try {
 			Connection connection = this.getConnection();
-			String sql = "select * from payroll_data where name=?";
+			String sql = "select payroll_data.employee_id,name, gender, net_pay, start, address, phone_number, company_name from payroll_data join company on payroll_data.company_id=company.company_id join payroll_details on payroll_data.employee_id=payroll_details.employee_id where name=?";
 			this.employeePayrollDataStatement = connection.prepareStatement(sql);
 		} catch (SQLException e) {
 			throw new EmployeePayrollException("Unable to prepare statement");
@@ -139,7 +143,7 @@ public class EmployeePayrollDBService {
 	public List<EmployeePayrollData> getEmployeePayrollDataByStartDate(LocalDate startDate, LocalDate endDate)
 			throws EmployeePayrollException {
 		String sql = String.format(
-				"select * from payroll_data where start between cast('%s' as date) and cast('%s' as date);",
+				"select payroll_data.employee_id,name, gender, net_pay, start, address, phone_number, company_name from payroll_data join company on payroll_data.company_id=company.company_id join payroll_details on payroll_data.employee_id=payroll_details.employee_id where start between cast('%s' as date) and cast('%s' as date);",
 				startDate.toString(), endDate.toString());
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
@@ -151,7 +155,7 @@ public class EmployeePayrollDBService {
 	}
 
 	public ComputationResult makeComputations(ComputationType computationType) throws EmployeePayrollException {
-		String sql = String.format("select gender, %s(salary) as result from payroll_data group by gender",
+		String sql = String.format("select gender, %s(net_pay) as result from payroll_data join payroll_details on payroll_data.employee_id=payroll_details.employee_id group by gender",
 				computationType.toString());
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
@@ -170,7 +174,7 @@ public class EmployeePayrollDBService {
 		}
 	}
 
-	public EmployeePayrollData addEmployeeToDataBase(String name, String gender, double salary, LocalDate start)
+	public EmployeePayrollData addEmployeeToDataBase(String company, String address, String phone_number, String name, String gender, double salary, LocalDate start)
 			throws EmployeePayrollException {
 		double basic_pay = salary;
 		double dedeuctions = 0.2 * basic_pay;
@@ -178,17 +182,35 @@ public class EmployeePayrollDBService {
 		double tax = 0.1 * taxable_pay;
 		double net_pay = basic_pay - tax;
 		int employeeId = 0;
+		int companyId=0;
 		EmployeePayrollData employeePayrollData = null;
 		Connection connection = this.getConnection();
 		try {
 			connection.setAutoCommit(false);
+			Statement statement0=connection.createStatement();
+			ResultSet resultSet=statement0.executeQuery(String.format("select company_id from company where company_name='%s'",company));
+			if (resultSet.next()) {
+				companyId=resultSet.getInt("company_id");
+			}else {
+				String sql0 = String.format(
+						"insert into company (company_name) values ('%s')", company);
+				Statement statement00 = connection.createStatement();
+				int rowsAffected = statement00.executeUpdate(sql0, statement00.RETURN_GENERATED_KEYS);
+				if (rowsAffected == 1) {
+					resultSet = statement00.getGeneratedKeys();
+					if (resultSet.next())
+						companyId = resultSet.getInt(1);
+				} else {
+					throw new EmployeePayrollException("Unable to add company_name to company");
+				}
+			}
 			String sql1 = String.format(
-					"insert into payroll_data (name,gender,salary,start) values ('%s','%s',%.2f,'%s')", name, gender,
-					salary, start.toString());
+					"insert into payroll_data (name,gender,start,company_id, address, phone_number) values ('%s','%s','%s',%s,'%s','%s')", name, gender,
+					start.toString(),companyId,address,phone_number);
 			Statement statement1 = connection.createStatement();
 			int rowsAffected = statement1.executeUpdate(sql1, statement1.RETURN_GENERATED_KEYS);
 			if (rowsAffected == 1) {
-				ResultSet resultSet = statement1.getGeneratedKeys();
+				resultSet = statement1.getGeneratedKeys();
 				if (resultSet.next())
 					employeeId = resultSet.getInt(1);
 			} else {
@@ -200,7 +222,7 @@ public class EmployeePayrollDBService {
 			Statement statement2 = connection.createStatement();
 			rowsAffected = statement2.executeUpdate(sql2);
 			if (rowsAffected == 1) {
-				employeePayrollData = new EmployeePayrollData(employeeId, name, salary, gender);
+				employeePayrollData = new EmployeePayrollData(employeeId, name, net_pay, gender, company, address, phone_number, start);
 			} else {
 				throw new EmployeePayrollException("Unable to add employee to payroll_data");
 			}

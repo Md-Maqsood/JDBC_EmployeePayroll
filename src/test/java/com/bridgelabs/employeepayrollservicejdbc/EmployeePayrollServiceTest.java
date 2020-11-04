@@ -22,7 +22,7 @@ public class EmployeePayrollServiceTest {
 	public void givenEmployeePayrollDataWhenUpdatedShouldMatchWithDB() {
 		try {
 			this.employeePayrollService.getEmployeePayrollData();
-			String name = "Terissa";
+			String name = "Terisa";
 			double salary = 3000000.00;
 			boolean result = this.employeePayrollService.updateEmployeeData(name, salary);
 			Assert.assertTrue(result);
@@ -37,7 +37,7 @@ public class EmployeePayrollServiceTest {
 	public void givenEmployeePayrollDataWhenUpdatedUsingPreparedStatementShouldMatchWithDB() {
 		try {
 			this.employeePayrollService.getEmployeePayrollData();
-			String name = "Terissa";
+			String name = "Terisa";
 			double salary = 3000000.00;
 			boolean result = this.employeePayrollService.updateEmployeeData(name, salary);
 			Assert.assertTrue(result);
@@ -53,7 +53,7 @@ public class EmployeePayrollServiceTest {
 		try {
 			this.employeePayrollService.getEmployeePayrollData();
 			ComputationResult result = this.employeePayrollService.makeComputations(ComputationType.AVG);
-			Assert.assertEquals(2000000.0, result.maleResult, 0.0);
+			Assert.assertEquals(7280000.0, result.maleResult, 0.0);
 			Assert.assertEquals(3000000.0, result.femaleResult, 0.0);
 		} catch (EmployeePayrollException e) {
 			logger.info(e.getMessage());
@@ -68,7 +68,10 @@ public class EmployeePayrollServiceTest {
 			double salary = 2000000.0;
 			String gender = "M";
 			LocalDate start = LocalDate.parse("2018-01-31");
-			this.employeePayrollService.addEmployeeToDatabase(name, gender, salary, start);
+			String company="Capgemini";
+			String address="xyz";
+			String phone_number="9123456789";
+			this.employeePayrollService.addEmployeeToDatabase(company, address,phone_number,name, gender, salary, start);
 			Assert.assertTrue(this.employeePayrollService.checkIfEmployeePayrollListInSyncWithDb(name));
 		} catch (EmployeePayrollException e) {
 			logger.info(e.getMessage());
