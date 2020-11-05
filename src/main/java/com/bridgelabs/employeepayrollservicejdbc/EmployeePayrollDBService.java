@@ -45,7 +45,7 @@ public class EmployeePayrollDBService {
 	}
 
 	public List<EmployeePayrollData> readData() throws EmployeePayrollException {
-		String sql = "select payroll_data.employee_id,name, gender, net_pay, start, address, phone_number, company_name from payroll_data join company on payroll_data.company_id=company.company_id join payroll_details on payroll_data.employee_id=payroll_details.employee_id";
+		String sql = "select payroll_data.employee_id,name, gender, net_pay, start, address, phone_number, company_name from payroll_data join company on payroll_data.company_id=company.company_id join payroll_details on payroll_data.employee_id=payroll_details.employee_id where is_active;";
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
 			ResultSet resultSet = statement.executeQuery(sql);
@@ -57,7 +57,7 @@ public class EmployeePayrollDBService {
 
 	private List<String> getDepartments(int employeeId) throws SQLException, EmployeePayrollException {
 		String sql = String.format(
-				"select department_name from payroll_data join employee_department on payroll_data.employee_id=employee_department.employee_id join department on employee_department.department_id=department.department_id where payroll_data.employee_id=%s",
+				"select department_name from payroll_data join employee_department on payroll_data.employee_id=employee_department.employee_id join department on employee_department.department_id=department.department_id where payroll_data.employee_id=%s;",
 				employeeId);
 		List<String> departments = new ArrayList<String>();
 		Connection connection = this.getConnection();
@@ -115,7 +115,7 @@ public class EmployeePayrollDBService {
 
 	private int updateEmployeePayrollDataUsingStatement(String name, double salary) throws EmployeePayrollException {
 		String sql = String.format(
-				"update payroll_details set net_pay=%.2f where employee_id=(select employee_id from payroll_data where name='%s')",
+				"update payroll_details set net_pay=%.2f where employee_id=(select employee_id from payroll_data where name='%s' and is_active);",
 				salary, name);
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
@@ -144,7 +144,7 @@ public class EmployeePayrollDBService {
 	private void prepareStatementForEmployeePayrollUpdate() throws EmployeePayrollException {
 		try {
 			Connection connection = this.getConnection();
-			String sql = "update payroll_details set net_pay=? where employee_id=(select employee_id from payroll_data where name=?)";
+			String sql = "update payroll_details set net_pay=? where employee_id=(select employee_id from payroll_data where name=? and is_active);";
 			this.preparedStatementForUpdate = connection.prepareStatement(sql);
 		} catch (SQLException e) {
 			throw new EmployeePayrollException("Unable to prepare statement");
@@ -154,7 +154,7 @@ public class EmployeePayrollDBService {
 	private void prepareStatementForEmployeePayrollDataRetrieval() throws EmployeePayrollException {
 		try {
 			Connection connection = this.getConnection();
-			String sql = "select payroll_data.employee_id,name, gender, net_pay, start, address, phone_number, company_name from payroll_data join company on payroll_data.company_id=company.company_id join payroll_details on payroll_data.employee_id=payroll_details.employee_id where name=?";
+			String sql = "select payroll_data.employee_id,name, gender, net_pay, start, address, phone_number, company_name from payroll_data join company on payroll_data.company_id=company.company_id join payroll_details on payroll_data.employee_id=payroll_details.employee_id where name=? and is_active;";
 			this.employeePayrollDataStatement = connection.prepareStatement(sql);
 		} catch (SQLException e) {
 			throw new EmployeePayrollException("Unable to prepare statement");
@@ -164,7 +164,7 @@ public class EmployeePayrollDBService {
 	public List<EmployeePayrollData> getEmployeePayrollDataByStartDate(LocalDate startDate, LocalDate endDate)
 			throws EmployeePayrollException {
 		String sql = String.format(
-				"select payroll_data.employee_id,name, gender, net_pay, start, address, phone_number, company_name from payroll_data join company on payroll_data.company_id=company.company_id join payroll_details on payroll_data.employee_id=payroll_details.employee_id where start between cast('%s' as date) and cast('%s' as date);",
+				"select payroll_data.employee_id,name, gender, net_pay, start, address, phone_number, company_name from payroll_data join company on payroll_data.company_id=company.company_id join payroll_details on payroll_data.employee_id=payroll_details.employee_id where start between cast('%s' as date) and cast('%s' as date) and is_active;",
 				startDate.toString(), endDate.toString());
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
@@ -177,7 +177,7 @@ public class EmployeePayrollDBService {
 
 	public ComputationResult makeComputations(ComputationType computationType) throws EmployeePayrollException {
 		String sql = String.format(
-				"select gender, %s(net_pay) as result from payroll_data join payroll_details on payroll_data.employee_id=payroll_details.employee_id group by gender",
+				"select gender, %s(net_pay) as result from payroll_data join payroll_details on payroll_data.employee_id=payroll_details.employee_id where is_active group by gender",
 				computationType.toString());
 		try (Connection connection = this.getConnection()) {
 			Statement statement = connection.createStatement();
@@ -220,6 +220,18 @@ public class EmployeePayrollDBService {
 		int rowsAffected = statement.executeUpdate(sql);
 		if (rowsAffected != 1)
 			throw new EmployeePayrollException("Unable to add values to employee_department table");
+	}
+
+	public void makeEmployeeInactiveInDataBase(String employeeName) throws EmployeePayrollException {
+		String sql = String.format("update payroll_data set is_active=0 where name='%s' and is_active", employeeName);
+		try (Connection connection = this.getConnection()) {
+			Statement statement = connection.createStatement();
+			int rowsAffected = statement.executeUpdate(sql);
+			if (rowsAffected == 0)
+				throw new EmployeePayrollException("Unable to delete employee or employee not found");
+		} catch (SQLException e) {
+			throw new EmployeePayrollException("Unable to delete employee from database");
+		}
 	}
 
 	public EmployeePayrollData addEmployeeToDataBase(String company, String address, String phone_number, String name,

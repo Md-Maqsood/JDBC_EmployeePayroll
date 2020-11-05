@@ -24,7 +24,14 @@ public class EmployeePayrollService {
 	public boolean checkIfEmployeePayrollListInSyncWithDb(String name) throws EmployeePayrollException {
 		List<EmployeePayrollData> employeePayrollDatas = this.employeePayrollDBService
 				.getEmployeePayrollDataFromDB(name);
-		return employeePayrollDatas.get(0).equals(getEmployeePayrollDataFromList(name));
+		EmployeePayrollData employeePayrollData = getEmployeePayrollDataFromList(name);
+		if (employeePayrollDatas.isEmpty()) {
+			if (employeePayrollData == null)
+				return true;
+			else
+				return false;
+		}
+		return employeePayrollDatas.get(0).equals(employeePayrollData);
 	}
 
 	public boolean updateEmployeeData(String name, double salary) throws EmployeePayrollException {
@@ -56,5 +63,11 @@ public class EmployeePayrollService {
 			throw new EmployeePayrollException("Unable to add employee");
 		}
 		this.employeePayrollList.add(employeePayrollData);
+	}
+
+	public void deleteEmployee(String name) throws EmployeePayrollException {
+		List<EmployeePayrollData> toBeDeleted = this.employeePayrollDBService.getEmployeePayrollDataFromDB(name);
+		this.employeePayrollDBService.makeEmployeeInactiveInDataBase(name);
+		toBeDeleted.forEach(employeePayrollData -> this.employeePayrollList.remove(employeePayrollData));
 	}
 }
