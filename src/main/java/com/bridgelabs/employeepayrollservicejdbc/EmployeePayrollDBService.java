@@ -55,12 +55,30 @@ public class EmployeePayrollDBService {
 		}
 	}
 
+	private List<String> getDepartments(int employeeId) throws SQLException, EmployeePayrollException {
+		String sql = String.format(
+				"select department_name from payroll_data join employee_department on payroll_data.employee_id=employee_department.employee_id join department on employee_department.department_id=department.department_id where payroll_data.employee_id=%s",
+				employeeId);
+		List<String> departments = new ArrayList<String>();
+		Connection connection = this.getConnection();
+		try {
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery(sql);
+			while (resultSet.next()) {
+				departments.add(resultSet.getString("department_name"));
+			}
+			return departments;
+		} finally {
+			connection.close();
+		}
+	}
+
 	private List<EmployeePayrollData> getEmployeePayrollListFromResultset(ResultSet resultSet)
 			throws EmployeePayrollException {
 		List<EmployeePayrollData> employeePayrollList = new ArrayList<EmployeePayrollData>();
 		try {
 			while (resultSet.next()) {
-				int id = resultSet.getInt("employee_id");
+				int employeeId = resultSet.getInt("employee_id");
 				String objectname = resultSet.getString("name");
 				String gender = resultSet.getString("gender");
 				double salary = resultSet.getDouble("net_pay");
@@ -68,8 +86,9 @@ public class EmployeePayrollDBService {
 				String address = resultSet.getString("address");
 				String phone_number = resultSet.getString("phone_number");
 				String company = resultSet.getString("company_name");
-				employeePayrollList.add(
-						new EmployeePayrollData(id, objectname, salary, gender, company, address, phone_number, start));
+				List<String> departments = this.getDepartments(employeeId);
+				employeePayrollList.add(new EmployeePayrollData(employeeId, objectname, salary, gender, company,
+						address, phone_number, start, departments));
 			}
 			return employeePayrollList;
 		} catch (SQLException e) {
@@ -177,8 +196,34 @@ public class EmployeePayrollDBService {
 		}
 	}
 
+	private void addDepartmentToDataBase(int employeeId, String department, Connection connection)
+			throws SQLException, EmployeePayrollException {
+		String sql = String.format("select department_id from department where department_name='%s'", department);
+		int departmentId = 0;
+		Statement statement = connection.createStatement();
+		ResultSet resultSet = statement.executeQuery(sql);
+		if (resultSet.next()) {
+			departmentId = resultSet.getInt("department_id");
+		} else {
+			sql = String.format("insert into department (department_name) values ('%s')", department);
+			int rowsAffected = statement.executeUpdate(sql, statement.RETURN_GENERATED_KEYS);
+			if (rowsAffected == 1) {
+				resultSet = statement.getGeneratedKeys();
+				if (resultSet.next())
+					departmentId = resultSet.getInt(1);
+			} else {
+				throw new EmployeePayrollException("Unable to add department to department table");
+			}
+		}
+		sql = String.format("insert into employee_department (employee_id, department_id) values (%s,%s)", employeeId,
+				departmentId);
+		int rowsAffected = statement.executeUpdate(sql);
+		if (rowsAffected != 1)
+			throw new EmployeePayrollException("Unable to add values to employee_department table");
+	}
+
 	public EmployeePayrollData addEmployeeToDataBase(String company, String address, String phone_number, String name,
-			String gender, double salary, LocalDate start) throws EmployeePayrollException {
+			String gender, double salary, LocalDate start, List<String> departments) throws EmployeePayrollException {
 		double basic_pay = salary;
 		double dedeuctions = 0.2 * basic_pay;
 		double taxable_pay = basic_pay - dedeuctions;
@@ -219,14 +264,16 @@ public class EmployeePayrollDBService {
 			} else {
 				throw new EmployeePayrollException("Unable to add employee to payroll_data");
 			}
-
+			for (String department : departments) {
+				this.addDepartmentToDataBase(employeeId, department, connection);
+			}
 			String sql2 = String.format("insert into payroll_details values (%s,%s,%s,%s,%s,%s)", employeeId, basic_pay,
 					dedeuctions, taxable_pay, tax, net_pay);
 			Statement statement2 = connection.createStatement();
 			rowsAffected = statement2.executeUpdate(sql2);
 			if (rowsAffected == 1) {
 				employeePayrollData = new EmployeePayrollData(employeeId, name, net_pay, gender, company, address,
-						phone_number, start);
+						phone_number, start, departments);
 			} else {
 				throw new EmployeePayrollException("Unable to add employee to payroll_data");
 			}

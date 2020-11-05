@@ -1,6 +1,7 @@
 package com.bridgelabs.employeepayrollservicejdbc;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
@@ -71,7 +72,10 @@ public class EmployeePayrollServiceTest {
 			String company="Capgemini";
 			String address="xyz";
 			String phone_number="9123456789";
-			this.employeePayrollService.addEmployeeToDatabase(company, address,phone_number,name, gender, salary, start);
+			List<String> departments=new ArrayList<String>();
+			departments.add("Sales");
+			departments.add("Logistics");
+			this.employeePayrollService.addEmployeeToDatabase(company, address,phone_number,name, gender, salary, start, departments);
 			Assert.assertTrue(this.employeePayrollService.checkIfEmployeePayrollListInSyncWithDb(name));
 		} catch (EmployeePayrollException e) {
 			logger.info(e.getMessage());

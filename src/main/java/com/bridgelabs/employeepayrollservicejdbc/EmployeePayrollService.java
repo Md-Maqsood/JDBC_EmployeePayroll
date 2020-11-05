@@ -49,9 +49,9 @@ public class EmployeePayrollService {
 	}
 
 	public void addEmployeeToDatabase(String company, String address, String phone_number, String name, String gender,
-			double salary, LocalDate start) throws EmployeePayrollException {
+			double salary, LocalDate start, List<String> departments) throws EmployeePayrollException {
 		EmployeePayrollData employeePayrollData = this.employeePayrollDBService.addEmployeeToDataBase(company, address,
-				phone_number, name, gender, salary, start);
+				phone_number, name, gender, salary, start, departments);
 		if (employeePayrollData == null) {
 			throw new EmployeePayrollException("Unable to add employee");
 		}

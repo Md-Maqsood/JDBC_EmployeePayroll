@@ -1,6 +1,7 @@
 package com.bridgelabs.employeepayrollservicejdbc;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class EmployeePayrollData {
 	private int id;
@@ -10,13 +11,23 @@ public class EmployeePayrollData {
 	private String company;
 	private String address;
 	private String phone_number;
-	
+	private List<String> departments;
+
 	public EmployeePayrollData(int id, String name, double salary, String gender, String company, String address,
-			String phone_number, LocalDate start) {
+			String phone_number, LocalDate start, List<String> departments) {
 		this(id, name, salary, gender, start);
 		this.company = company;
 		this.address = address;
 		this.phone_number = phone_number;
+		this.departments = departments;
+	}
+
+	public List<String> getDepartments() {
+		return departments;
+	}
+
+	public void setDepartments(List<String> departments) {
+		this.departments = departments;
 	}
 
 	public String getCompany() {
@@ -44,16 +55,17 @@ public class EmployeePayrollData {
 	}
 
 	private LocalDate start;
+
 	public EmployeePayrollData(int id, String name, double salary, String gender) {
 		this.id = id;
 		this.name = name;
 		this.salary = salary;
 		this.gender = gender;
 	}
-	
+
 	public EmployeePayrollData(int id, String name, double salary, String gender, LocalDate start) {
-		this(id,name,salary,gender);
-		this.start=start;
+		this(id, name, salary, gender);
+		this.start = start;
 	}
 
 	public int getId() {
@@ -95,23 +107,21 @@ public class EmployeePayrollData {
 	public void setStart(LocalDate start) {
 		this.start = start;
 	}
-	
-	
-	
+
 	@Override
 	public String toString() {
 		return "EmployeePayrollData [id=" + id + ", name=" + name + ", salary=" + salary + ", gender=" + gender
-				+ ", company=" + company + ", address=" + address + ", phone_number=" + phone_number + ", start="
-				+ start + "]";
+				+ ", company=" + company + ", address=" + address + ", phone_number=" + phone_number + ", departments="
+				+ departments + ", start=" + start + "]";
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if(this==o) return true;
-		if(o==null||getClass()!=o.getClass()) return false;
-		EmployeePayrollData that=(EmployeePayrollData) o;
-		return id== that.id &&
-				Double.compare(that.salary, salary)==0 &&
-				name.equals(that.name);		
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		EmployeePayrollData that = (EmployeePayrollData) o;
+		return id == that.id && Double.compare(that.salary, salary) == 0 && name.equals(that.name);
 	}
 }
