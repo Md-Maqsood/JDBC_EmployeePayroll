@@ -69,13 +69,14 @@ public class EmployeePayrollServiceTest {
 			double salary = 2000000.0;
 			String gender = "M";
 			LocalDate start = LocalDate.parse("2018-01-31");
-			String company="Capgemini";
-			String address="xyz";
-			String phone_number="9123456789";
-			List<String> departments=new ArrayList<String>();
+			String company = "Capgemini";
+			String address = "xyz";
+			String phone_number = "9123456789";
+			List<String> departments = new ArrayList<String>();
 			departments.add("Sales");
 			departments.add("Logistics");
-			this.employeePayrollService.addEmployeeToDatabase(company, address,phone_number,name, gender, salary, start, departments);
+			this.employeePayrollService.addEmployeeToDatabase(company, address, phone_number, name, gender, salary,
+					start, departments);
 			Assert.assertTrue(this.employeePayrollService.checkIfEmployeePayrollListInSyncWithDb(name));
 		} catch (EmployeePayrollException e) {
 			logger.info(e.getMessage());
