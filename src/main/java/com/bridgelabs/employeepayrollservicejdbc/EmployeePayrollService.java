@@ -3,7 +3,11 @@ package com.bridgelabs.employeepayrollservicejdbc;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class EmployeePayrollService {
+	private static final Logger logger=LogManager.getFormatterLogger(EmployeePayrollService.class);
 	private EmployeePayrollDBService employeePayrollDBService;
 	private List<EmployeePayrollData> employeePayrollList;
 
@@ -14,6 +18,10 @@ public class EmployeePayrollService {
 	public List<EmployeePayrollData> getEmployeePayrollData() throws EmployeePayrollException {
 		this.employeePayrollList = this.employeePayrollDBService.readData();
 		return this.employeePayrollList;
+	}
+	
+	public int countEntries() throws EmployeePayrollException {
+		return this.getEmployeePayrollData().size();
 	}
 
 	public EmployeePayrollData getEmployeePayrollDataFromList(String name) {
@@ -69,5 +77,14 @@ public class EmployeePayrollService {
 		List<EmployeePayrollData> toBeDeleted = this.employeePayrollDBService.getEmployeePayrollDataFromDB(name);
 		this.employeePayrollDBService.makeEmployeeInactiveInDataBase(name);
 		toBeDeleted.forEach(employeePayrollData -> this.employeePayrollList.remove(employeePayrollData));
+	}
+
+	public void addEmployeesToDatabase(List<EmployeePayrollData> employeePayrollDatalist) throws EmployeePayrollException {
+		for(EmployeePayrollData employeePayrollData: employeePayrollDatalist) {
+			logger.info("Employee being added: "+employeePayrollData.getName());
+			this.addEmployeeToDatabase(employeePayrollData.getCompany(), employeePayrollData.getAddress(), employeePayrollData.getPhone_number(), employeePayrollData.getName(), employeePayrollData.getGender(), employeePayrollData.getSalary(), employeePayrollData.getStart(), employeePayrollData.getDepartments());
+			logger.info("Employee Added: "+employeePayrollData.getName());
+		};
+		logger.info(this.employeePayrollList);
 	}
 }
