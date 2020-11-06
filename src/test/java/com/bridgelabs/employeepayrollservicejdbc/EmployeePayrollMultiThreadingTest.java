@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,6 +40,26 @@ public class EmployeePayrollMultiThreadingTest {
 		} catch (EmployeePayrollException e) {
 			e.printStackTrace();
 		}
-		
+	}
+	
+	@Test
+	public void given3Employees_WhenSalariesUpdate_ShouldSyncWithDatabase() {
+		Map<String, Double> salaries=new HashMap<String, Double>();
+		salaries.put("Bill", 150000.0);
+		salaries.put("Charlie", 150000.0);
+		salaries.put("Terisa", 150000.0);
+		EmployeePayrollService employeePayrollService=new EmployeePayrollService();
+		try {
+			employeePayrollService.getEmployeePayrollData();
+			Instant threadStart=Instant.now();
+			employeePayrollService.updateEmployeesToDatabaseWithThreads(salaries);
+			Instant threadEnd=Instant.now();
+			logger.info("Duration with thread: "+Duration.between(threadStart, threadEnd));
+			for (String name : salaries.keySet()) {
+				Assert.assertTrue(employeePayrollService.checkIfEmployeePayrollListInSyncWithDb(name));
+			}
+		} catch (EmployeePayrollException e) {
+			e.printStackTrace();
+		}
 	}
 }

@@ -9,7 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class EmployeePayrollService {
-	private static final Logger logger=LogManager.getFormatterLogger(EmployeePayrollService.class);
+	private static final Logger logger = LogManager.getFormatterLogger(EmployeePayrollService.class);
 	private EmployeePayrollDBService employeePayrollDBService;
 	private List<EmployeePayrollData> employeePayrollList;
 
@@ -21,7 +21,7 @@ public class EmployeePayrollService {
 		this.employeePayrollList = this.employeePayrollDBService.readData();
 		return this.employeePayrollList;
 	}
-	
+
 	public int countEntries() throws EmployeePayrollException {
 		return this.getEmployeePayrollData().size();
 	}
@@ -81,33 +81,42 @@ public class EmployeePayrollService {
 		toBeDeleted.forEach(employeePayrollData -> this.employeePayrollList.remove(employeePayrollData));
 	}
 
-	public void addEmployeesToDatabase(List<EmployeePayrollData> employeePayrollDatalist) throws EmployeePayrollException {
-		for(EmployeePayrollData employeePayrollData: employeePayrollDatalist) {
-			logger.info("Employee being added: "+employeePayrollData.getName());
-			this.addEmployeeToDatabase(employeePayrollData.getCompany(), employeePayrollData.getAddress(), employeePayrollData.getPhone_number(), employeePayrollData.getName(), employeePayrollData.getGender(), employeePayrollData.getSalary(), employeePayrollData.getStart(), employeePayrollData.getDepartments());
-			logger.info("Employee Added: "+employeePayrollData.getName());
-		};
+	public void addEmployeesToDatabase(List<EmployeePayrollData> employeePayrollDatalist)
+			throws EmployeePayrollException {
+		for (EmployeePayrollData employeePayrollData : employeePayrollDatalist) {
+			logger.info("Employee being added: " + employeePayrollData.getName());
+			this.addEmployeeToDatabase(employeePayrollData.getCompany(), employeePayrollData.getAddress(),
+					employeePayrollData.getPhone_number(), employeePayrollData.getName(),
+					employeePayrollData.getGender(), employeePayrollData.getSalary(), employeePayrollData.getStart(),
+					employeePayrollData.getDepartments());
+			logger.info("Employee Added: " + employeePayrollData.getName());
+		}
+		;
 		logger.info(this.employeePayrollList);
 	}
 
-	public void addEmployeesToDatabaseWithThreads(List<EmployeePayrollData> employeePayrollDataList) throws EmployeePayrollException {
-		Map<Integer, Boolean> employeeAdditionStatus=new HashMap<Integer, Boolean>();
+	public void addEmployeesToDatabaseWithThreads(List<EmployeePayrollData> employeePayrollDataList)
+			throws EmployeePayrollException {
+		Map<Integer, Boolean> employeeAdditionStatus = new HashMap<Integer, Boolean>();
 		for (EmployeePayrollData employeePayrollData : employeePayrollDataList) {
-			Runnable task=()->{
+			Runnable task = () -> {
 				employeeAdditionStatus.put(employeePayrollData.hashCode(), false);
-				logger.info("Employee being added: "+Thread.currentThread().getName());
+				logger.info("Employee being added: " + Thread.currentThread().getName());
 				try {
-					this.addEmployeeToDatabase(employeePayrollData.getCompany(), employeePayrollData.getAddress(), employeePayrollData.getPhone_number(), employeePayrollData.getName(), employeePayrollData.getGender(), employeePayrollData.getSalary(), employeePayrollData.getStart(), employeePayrollData.getDepartments());
+					this.addEmployeeToDatabase(employeePayrollData.getCompany(), employeePayrollData.getAddress(),
+							employeePayrollData.getPhone_number(), employeePayrollData.getName(),
+							employeePayrollData.getGender(), employeePayrollData.getSalary(),
+							employeePayrollData.getStart(), employeePayrollData.getDepartments());
 				} catch (EmployeePayrollException e) {
 					e.printStackTrace();
 				}
 				employeeAdditionStatus.put(employeePayrollData.hashCode(), true);
-				logger.info("Employee added: "+Thread.currentThread().getName());
+				logger.info("Employee added: " + Thread.currentThread().getName());
 			};
-			Thread thread=new Thread(task,employeePayrollData.getName());
+			Thread thread = new Thread(task, employeePayrollData.getName());
 			thread.start();
 		}
-		while(employeeAdditionStatus.containsValue(false)) {
+		while (employeeAdditionStatus.containsValue(false)) {
 			try {
 				Thread.sleep(10);
 			} catch (InterruptedException e) {
@@ -116,4 +125,32 @@ public class EmployeePayrollService {
 		}
 		logger.info(this.employeePayrollList);
 	}
+
+	public void updateEmployeesToDatabaseWithThreads(Map<String, Double> salaries) {
+		Map<String, Boolean> salaryAdditionStatus = new HashMap<String, Boolean>();
+		for (String employeeName : salaries.keySet()) {
+			Runnable task = () -> {
+				salaryAdditionStatus.put(employeeName, false);
+				logger.info("Employee being updated: " + Thread.currentThread().getName());
+				try {
+					this.updateEmployeeData(employeeName, salaries.get(employeeName));
+				} catch (EmployeePayrollException e) {
+					e.printStackTrace();
+				}
+				salaryAdditionStatus.put(employeeName, true);
+				logger.info("Employee added: " + Thread.currentThread().getName());
+			};
+			Thread thread = new Thread(task, employeeName);
+			thread.start();
+		}
+		while (salaryAdditionStatus.containsValue(false)) {
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
 }
