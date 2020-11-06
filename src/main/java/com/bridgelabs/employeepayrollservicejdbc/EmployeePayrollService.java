@@ -1,7 +1,9 @@
 package com.bridgelabs.employeepayrollservicejdbc;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -85,6 +87,33 @@ public class EmployeePayrollService {
 			this.addEmployeeToDatabase(employeePayrollData.getCompany(), employeePayrollData.getAddress(), employeePayrollData.getPhone_number(), employeePayrollData.getName(), employeePayrollData.getGender(), employeePayrollData.getSalary(), employeePayrollData.getStart(), employeePayrollData.getDepartments());
 			logger.info("Employee Added: "+employeePayrollData.getName());
 		};
+		logger.info(this.employeePayrollList);
+	}
+
+	public void addEmployeesToDatabaseWithThreads(List<EmployeePayrollData> employeePayrollDataList) throws EmployeePayrollException {
+		Map<Integer, Boolean> employeeAdditionStatus=new HashMap<Integer, Boolean>();
+		for (EmployeePayrollData employeePayrollData : employeePayrollDataList) {
+			Runnable task=()->{
+				employeeAdditionStatus.put(employeePayrollData.hashCode(), false);
+				logger.info("Employee being added: "+employeePayrollData.getName());
+				try {
+					this.addEmployeeToDatabase(employeePayrollData.getCompany(), employeePayrollData.getAddress(), employeePayrollData.getPhone_number(), employeePayrollData.getName(), employeePayrollData.getGender(), employeePayrollData.getSalary(), employeePayrollData.getStart(), employeePayrollData.getDepartments());
+				} catch (EmployeePayrollException e) {
+					e.printStackTrace();
+				}
+				employeeAdditionStatus.put(employeePayrollData.hashCode(), true);
+				logger.info("Employee added: "+employeePayrollData.getName());
+			};
+			Thread thread=new Thread(task);
+			thread.start();
+		}
+		while(employeeAdditionStatus.containsValue(false)) {
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 		logger.info(this.employeePayrollList);
 	}
 }

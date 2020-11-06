@@ -30,7 +30,11 @@ public class EmployeePayrollMultiThreadingTest {
 			employeePayrollService.addEmployeesToDatabase(Arrays.asList(arraysOfEmps));
 			Instant end=Instant.now();
 			logger.info("Duration without thread: "+Duration.between(start, end));
-			Assert.assertEquals(9,employeePayrollService.countEntries());
+			Instant threadStart=Instant.now();
+			employeePayrollService.addEmployeesToDatabaseWithThreads(Arrays.asList(arraysOfEmps));
+			Instant threadEnd=Instant.now();
+			logger.info("Duration with thread: "+Duration.between(threadStart, threadEnd));
+			Assert.assertEquals(15,employeePayrollService.countEntries());
 		} catch (EmployeePayrollException e) {
 			e.printStackTrace();
 		}
