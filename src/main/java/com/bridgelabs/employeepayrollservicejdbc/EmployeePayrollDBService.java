@@ -8,10 +8,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.mysql.cj.result.SqlDateValueFactory;
 
 @SuppressWarnings("unused")
 public class EmployeePayrollDBService {
@@ -199,30 +203,35 @@ public class EmployeePayrollDBService {
 		}
 	}
 
-	private void addDepartmentToDataBase(int employeeId, String department, Connection connection)
-			throws SQLException, EmployeePayrollException {
+	private boolean addDepartmentToDataBase(int employeeId, String department, Connection connection) {
 		String sql = String.format("select department_id from department where department_name='%s'", department);
 		int departmentId = 0;
-		Statement statement = connection.createStatement();
-		ResultSet resultSet = statement.executeQuery(sql);
-		if (resultSet.next()) {
-			departmentId = resultSet.getInt("department_id");
-		} else {
-			sql = String.format("insert into department (department_name) values ('%s')", department);
-			int rowsAffected = statement.executeUpdate(sql, statement.RETURN_GENERATED_KEYS);
-			if (rowsAffected == 1) {
-				resultSet = statement.getGeneratedKeys();
-				if (resultSet.next())
-					departmentId = resultSet.getInt(1);
+		try {
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery(sql);
+			if (resultSet.next()) {
+				departmentId = resultSet.getInt("department_id");
 			} else {
-				throw new EmployeePayrollException("Unable to add department to department table");
+				sql = String.format("insert into department (department_name) values ('%s')", department);
+				int rowsAffected = statement.executeUpdate(sql, statement.RETURN_GENERATED_KEYS);
+				if (rowsAffected == 1) {
+					resultSet = statement.getGeneratedKeys();
+					if (resultSet.next())
+						departmentId = resultSet.getInt(1);
+				} else {
+					return false;
+				}
 			}
+			sql = String.format("insert into employee_department (employee_id, department_id) values (%s,%s)", employeeId,
+					departmentId);
+			int rowsAffected = statement.executeUpdate(sql);
+			if (rowsAffected != 1) {
+				return false;
+			}
+			return true;
+		}catch(SQLException e){
+			return false;
 		}
-		sql = String.format("insert into employee_department (employee_id, department_id) values (%s,%s)", employeeId,
-				departmentId);
-		int rowsAffected = statement.executeUpdate(sql);
-		if (rowsAffected != 1)
-			throw new EmployeePayrollException("Unable to add values to employee_department table");
 	}
 
 	public void makeEmployeeInactiveInDataBase(String employeeName) throws EmployeePayrollException {
@@ -236,20 +245,10 @@ public class EmployeePayrollDBService {
 			throw new EmployeePayrollException("Unable to delete employee from database");
 		}
 	}
-
-	public EmployeePayrollData addEmployeeToDataBase(String company, String address, String phone_number, String name,
-			String gender, double salary, LocalDate start, List<String> departments) throws EmployeePayrollException {
-		double basic_pay = salary;
-		double dedeuctions = 0.2 * basic_pay;
-		double taxable_pay = basic_pay - dedeuctions;
-		double tax = 0.1 * taxable_pay;
-		double net_pay = basic_pay - tax;
-		int employeeId = 0;
-		int companyId = 0;
-		EmployeePayrollData employeePayrollData = null;
-		Connection connection = this.getConnection();
-		try {
-			connection.setAutoCommit(false);
+	
+	private int addCompanyDetailsReturnCompanyId(Connection connection, String company){
+		int companyId = -1;
+		try{
 			Statement statement0 = connection.createStatement();
 			ResultSet resultSet = statement0
 					.executeQuery(String.format("select company_id from company where company_name='%s'", company));
@@ -261,36 +260,109 @@ public class EmployeePayrollDBService {
 				int rowsAffected = statement00.executeUpdate(sql0, statement00.RETURN_GENERATED_KEYS);
 				if (rowsAffected == 1) {
 					resultSet = statement00.getGeneratedKeys();
-					if (resultSet.next())
-						companyId = resultSet.getInt(1);
-				} else {
-					throw new EmployeePayrollException("Unable to add company_name to company");
+					if (resultSet.next()) companyId = resultSet.getInt(1);
 				}
 			}
-			String sql1 = String.format(
-					"insert into payroll_data (name,gender,start,company_id, address, phone_number) values ('%s','%s','%s',%s,'%s','%s')",
-					name, gender, start.toString(), companyId, address, phone_number);
+			return companyId;
+		}catch(SQLException e) {
+			return -1;
+		}
+	}
+	
+	private int addEmployeeDetailsToPayrollDataReturnEmployeeId(Connection connection, String name, String gender, LocalDate start, int companyId, String address, String phoneNumber) {
+		int employeeId=-1;
+		String sql1 = String.format(
+				"insert into payroll_data (name,gender,start,company_id, address, phone_number) values ('%s','%s','%s',%s,'%s','%s')",
+				name, gender, start.toString(), companyId, address, phoneNumber);
+		try{
 			Statement statement1 = connection.createStatement();
 			int rowsAffected = statement1.executeUpdate(sql1, statement1.RETURN_GENERATED_KEYS);
 			if (rowsAffected == 1) {
-				resultSet = statement1.getGeneratedKeys();
+				ResultSet resultSet = statement1.getGeneratedKeys();
 				if (resultSet.next())
 					employeeId = resultSet.getInt(1);
-			} else {
-				throw new EmployeePayrollException("Unable to add employee to payroll_data");
 			}
-			for (String department : departments) {
-				this.addDepartmentToDataBase(employeeId, department, connection);
+			return employeeId;
+		}catch(SQLException e) { 
+			return -1;
+		}		
+	}
+
+	public synchronized EmployeePayrollData addEmployeeToDataBase(String company, String address, String phoneNumber, String name,
+			String gender, double salary, LocalDate start, List<String> departments) throws EmployeePayrollException {
+		double basic_pay = salary;
+		double dedeuctions = 0.2 * basic_pay;
+		double taxable_pay = basic_pay - dedeuctions;
+		double tax = 0.1 * taxable_pay;
+		double net_pay = basic_pay - tax;
+		List<Integer> employeeId = new ArrayList<Integer>();
+		employeeId.add(-1);
+		List<Integer> companyId = new ArrayList<Integer>();
+		companyId.add(-1);
+		Map<String, Boolean> whetherDepartmentIsAdded=new HashMap<String, Boolean>();
+		departments.forEach(department->whetherDepartmentIsAdded.put(department, false));
+		Map<String,Boolean> threadsExecutionStatus=new HashMap<String, Boolean>();
+		EmployeePayrollData employeePayrollData = null;
+		Connection connection = this.getConnection();
+		try {
+			connection.setAutoCommit(false);
+			Runnable taskCompany=()->{
+				threadsExecutionStatus.put(Thread.currentThread().getName(), false);
+				logger.info("Adding to company with thread: "+Thread.currentThread().getName());
+				companyId.set(0,this.addCompanyDetailsReturnCompanyId(connection, company));
+				logger.info("Added to company with thread: "+Thread.currentThread().getName());
+				threadsExecutionStatus.put(Thread.currentThread().getName(), true);
+			};			
+			Runnable taskPayrollData=()->{
+				threadsExecutionStatus.put(Thread.currentThread().getName(), false);
+				logger.info("Adding to payroll_data with thread: "+Thread.currentThread().getName());
+				employeeId.set(0,this.addEmployeeDetailsToPayrollDataReturnEmployeeId(connection, name, gender, start, companyId.get(0), address, phoneNumber));
+				logger.info("Added to payroll_data with thread: "+Thread.currentThread().getName());
+				threadsExecutionStatus.put(Thread.currentThread().getName(), true);
+			};
+			Runnable taskDepartment=()->{
+				threadsExecutionStatus.put(Thread.currentThread().getName(), false);
+				logger.info("Adding to department with thread: "+Thread.currentThread().getName());
+				for (String department : departments) {
+					whetherDepartmentIsAdded.put(department,this.addDepartmentToDataBase(employeeId.get(0), department, connection));
+				}
+				logger.info("Adding to department with thread: "+Thread.currentThread().getName());
+				threadsExecutionStatus.put(Thread.currentThread().getName(), true);
+			};
+			Thread thread1=new Thread(taskCompany, "company");
+			Thread thread2=new Thread(taskPayrollData, "payrollData");
+			Thread thread3=new Thread(taskDepartment, "department");
+			thread1.start();
+			try {
+				thread1.join();
+			} catch (InterruptedException e) {
+				throw new EmployeePayrollException("Unable to add Company");
 			}
-			String sql2 = String.format("insert into payroll_details values (%s,%s,%s,%s,%s,%s)", employeeId, basic_pay,
+			if(companyId.get(0)==-1) throw new EmployeePayrollException("Unable to add Company");
+			thread2.start();
+			try {
+				thread2.join();
+			} catch (InterruptedException e) {
+				throw new EmployeePayrollException("Unable to add to payroll_data");
+			}
+			if(employeeId.get(0)==-1) throw new EmployeePayrollException("Unable to add to payroll_data");
+			thread3.start();
+			while(threadsExecutionStatus.containsValue(false)) {
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+					throw new EmployeePayrollException("Unable to add employee to payroll_data table");
+				}
+			}
+			String sql2 = String.format("insert into payroll_details values (%s,%s,%s,%s,%s,%s)", employeeId.get(0), basic_pay,
 					dedeuctions, taxable_pay, tax, net_pay);
 			Statement statement2 = connection.createStatement();
-			rowsAffected = statement2.executeUpdate(sql2);
+			int rowsAffected = statement2.executeUpdate(sql2);
 			if (rowsAffected == 1) {
-				employeePayrollData = new EmployeePayrollData(employeeId, name, net_pay, gender, company, address,
-						phone_number, start, departments);
+				employeePayrollData = new EmployeePayrollData(employeeId.get(0), name, net_pay, gender, company, address,
+						phoneNumber, start, departments);
 			} else {
-				throw new EmployeePayrollException("Unable to add employee to payroll_data");
+				throw new EmployeePayrollException("Unable to add employee to payroll_details");
 			}
 			connection.commit();
 			return employeePayrollData;
