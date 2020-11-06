@@ -304,30 +304,30 @@ public class EmployeePayrollDBService {
 		Map<String,Boolean> threadsExecutionStatus=new HashMap<String, Boolean>();
 		EmployeePayrollData employeePayrollData = null;
 		Connection connection = this.getConnection();
+		threadsExecutionStatus.put("company",false);
+		threadsExecutionStatus.put("payrollData",false);
+		threadsExecutionStatus.put("department",false);
 		try {
 			connection.setAutoCommit(false);
 			Runnable taskCompany=()->{
-				threadsExecutionStatus.put(Thread.currentThread().getName(), false);
 				logger.info("Adding to company with thread: "+Thread.currentThread().getName());
 				companyId.set(0,this.addCompanyDetailsReturnCompanyId(connection, company));
 				logger.info("Added to company with thread: "+Thread.currentThread().getName());
-				threadsExecutionStatus.put(Thread.currentThread().getName(), true);
+				threadsExecutionStatus.put("company", true);
 			};			
 			Runnable taskPayrollData=()->{
-				threadsExecutionStatus.put(Thread.currentThread().getName(), false);
 				logger.info("Adding to payroll_data with thread: "+Thread.currentThread().getName());
 				employeeId.set(0,this.addEmployeeDetailsToPayrollDataReturnEmployeeId(connection, name, gender, start, companyId.get(0), address, phoneNumber));
 				logger.info("Added to payroll_data with thread: "+Thread.currentThread().getName());
-				threadsExecutionStatus.put(Thread.currentThread().getName(), true);
+				threadsExecutionStatus.put("payrollData", true);
 			};
 			Runnable taskDepartment=()->{
-				threadsExecutionStatus.put(Thread.currentThread().getName(), false);
 				logger.info("Adding to department with thread: "+Thread.currentThread().getName());
 				for (String department : departments) {
 					whetherDepartmentIsAdded.put(department,this.addDepartmentToDataBase(employeeId.get(0), department, connection));
 				}
 				logger.info("Adding to department with thread: "+Thread.currentThread().getName());
-				threadsExecutionStatus.put(Thread.currentThread().getName(), true);
+				threadsExecutionStatus.put("department", true);
 			};
 			Thread thread1=new Thread(taskCompany, "company");
 			Thread thread2=new Thread(taskPayrollData, "payrollData");
@@ -347,6 +347,11 @@ public class EmployeePayrollDBService {
 			}
 			if(employeeId.get(0)==-1) throw new EmployeePayrollException("Unable to add to payroll_data");
 			thread3.start();
+			try {
+				thread3.join();
+			} catch (InterruptedException e1) {
+				throw new EmployeePayrollException("Unable to add department");
+			}
 			while(threadsExecutionStatus.containsValue(false)) {
 				try {
 					Thread.sleep(10);

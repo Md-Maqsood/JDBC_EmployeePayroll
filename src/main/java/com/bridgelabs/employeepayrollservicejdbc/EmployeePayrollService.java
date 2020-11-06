@@ -98,9 +98,9 @@ public class EmployeePayrollService {
 	public void addEmployeesToDatabaseWithThreads(List<EmployeePayrollData> employeePayrollDataList)
 			throws EmployeePayrollException {
 		Map<Integer, Boolean> employeeAdditionStatus = new HashMap<Integer, Boolean>();
+		employeePayrollDataList.forEach(employeePayrollData->employeeAdditionStatus.put(employeePayrollData.hashCode(), false));
 		for (EmployeePayrollData employeePayrollData : employeePayrollDataList) {
 			Runnable task = () -> {
-				employeeAdditionStatus.put(employeePayrollData.hashCode(), false);
 				logger.info("Employee being added: " + Thread.currentThread().getName());
 				try {
 					this.addEmployeeToDatabase(employeePayrollData.getCompany(), employeePayrollData.getAddress(),
@@ -128,9 +128,9 @@ public class EmployeePayrollService {
 
 	public void updateEmployeesToDatabaseWithThreads(Map<String, Double> salaries) {
 		Map<String, Boolean> salaryAdditionStatus = new HashMap<String, Boolean>();
+		salaries.keySet().forEach(employeeName->salaryAdditionStatus.put(employeeName, false));
 		for (String employeeName : salaries.keySet()) {
 			Runnable task = () -> {
-				salaryAdditionStatus.put(employeeName, false);
 				logger.info("Employee being updated: " + Thread.currentThread().getName());
 				try {
 					this.updateEmployeeData(employeeName, salaries.get(employeeName));
