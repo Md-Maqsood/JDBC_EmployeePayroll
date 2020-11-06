@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 
 @SuppressWarnings("unused")
 public class EmployeePayrollDBService {
+	public int connectionCounter=0;
 	private static final Logger logger = LogManager.getLogger(EmployeePayrollDBService.class);
 	private static EmployeePayrollDBService employeePayrollDBService;
 	private PreparedStatement preparedStatementForUpdate;
@@ -31,13 +32,15 @@ public class EmployeePayrollDBService {
 	}
 
 	private Connection getConnection() throws EmployeePayrollException {
+		connectionCounter++;
 		String JDBC_URL = "jdbc:mysql://localhost:3306/payroll_service?useSSL=false";
 		String USERNAME = "root";
 		String PASSWORD = "abcd1234";
 		Connection connection;
 		try {
+			logger.info("Processing thread: "+Thread.currentThread().getName()+"Connecting to database with Id: "+connectionCounter);
 			connection = DriverManager.getConnection(JDBC_URL, USERNAME, PASSWORD);
-			logger.info("Connection is established");
+			logger.info("Processing thread :"+Thread.currentThread().getName()+"Id: "+connectionCounter+" Connection is established");
 			return connection;
 		} catch (SQLException e) {
 			throw new EmployeePayrollException("Unable to establish connection to database");

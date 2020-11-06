@@ -95,16 +95,16 @@ public class EmployeePayrollService {
 		for (EmployeePayrollData employeePayrollData : employeePayrollDataList) {
 			Runnable task=()->{
 				employeeAdditionStatus.put(employeePayrollData.hashCode(), false);
-				logger.info("Employee being added: "+employeePayrollData.getName());
+				logger.info("Employee being added: "+Thread.currentThread().getName());
 				try {
 					this.addEmployeeToDatabase(employeePayrollData.getCompany(), employeePayrollData.getAddress(), employeePayrollData.getPhone_number(), employeePayrollData.getName(), employeePayrollData.getGender(), employeePayrollData.getSalary(), employeePayrollData.getStart(), employeePayrollData.getDepartments());
 				} catch (EmployeePayrollException e) {
 					e.printStackTrace();
 				}
 				employeeAdditionStatus.put(employeePayrollData.hashCode(), true);
-				logger.info("Employee added: "+employeePayrollData.getName());
+				logger.info("Employee added: "+Thread.currentThread().getName());
 			};
-			Thread thread=new Thread(task);
+			Thread thread=new Thread(task,employeePayrollData.getName());
 			thread.start();
 		}
 		while(employeeAdditionStatus.containsValue(false)) {
