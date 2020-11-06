@@ -352,6 +352,7 @@ public class EmployeePayrollDBService {
 			} catch (InterruptedException e1) {
 				throw new EmployeePayrollException("Unable to add department");
 			}
+			if(whetherDepartmentIsAdded.containsValue(false)) throw new EmployeePayrollException("Unable to add department");
 			while(threadsExecutionStatus.containsValue(false)) {
 				try {
 					Thread.sleep(10);
