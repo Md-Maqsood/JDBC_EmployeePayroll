@@ -1,6 +1,7 @@
 package com.bridgelabs.employeepayrollservicejdbc;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,10 @@ public class EmployeePayrollService {
 	private EmployeePayrollDBService employeePayrollDBService;
 	private List<EmployeePayrollData> employeePayrollList;
 
+	public EmployeePayrollService(List<EmployeePayrollData> employeePayrollList) {
+		this.employeePayrollList=new ArrayList<EmployeePayrollData>(employeePayrollList);
+	}
+	
 	public EmployeePayrollService() {
 		this.employeePayrollDBService = EmployeePayrollDBService.getInstance();
 	}
@@ -23,9 +28,13 @@ public class EmployeePayrollService {
 	}
 
 	public int countEntries() throws EmployeePayrollException {
-		return this.getEmployeePayrollData().size();
+		return this.employeePayrollList.size();
 	}
-
+	
+	public void addEmployeeToPayrollUsingRestIo(EmployeePayrollData employeePayrollData) {
+		this.employeePayrollList.add(employeePayrollData);
+	}
+	
 	public EmployeePayrollData getEmployeePayrollDataFromList(String name) {
 		return this.employeePayrollList.stream()
 				.filter(employeePayrollObject -> employeePayrollObject.getName().equals(name)).findFirst().orElse(null);
