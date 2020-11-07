@@ -2,6 +2,9 @@ package com.bridgelabs.employeepayrollservicejdbc;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,39 +20,77 @@ import io.restassured.specification.RequestSpecification;
 
 public class EmployeePayrollRestAssuredTest {
 	private static Logger logger = LogManager.getLogger(EmployeePayrollRestAssuredTest.class);
-	private int empId;
-
+	
 	@Before
 	public void setUp() {
 		RestAssured.baseURI = "http://localhost";
 		RestAssured.port = 3000;
-		empId = 9;
 	}
 
 	@Test
 	public void givenNewEmployee_WhenAdded_ShouldMatch201ResponseandCount() throws EmployeePayrollException {
-		EmployeePayrollService employeePayrollService=new EmployeePayrollService(Arrays.asList(getEmployeeList()));
-		EmployeePayrollData employeePayrollData=new EmployeePayrollData(0, "Mark", 150000, "M", LocalDate.now());
-		Response response=addEmployeeToJsonServer(employeePayrollData);
-		int statusCode=response.getStatusCode();
+		EmployeePayrollService employeePayrollService = new EmployeePayrollService(Arrays.asList(getEmployeeList()));
+		EmployeePayrollData employeePayrollData = new EmployeePayrollData(0, "Mark", 150000, "M", LocalDate.now());
+		Response response = addEmployeeToJsonServer(employeePayrollData);
+		int statusCode = response.getStatusCode();
 		Assert.assertEquals(201, statusCode);
-		employeePayrollData=new Gson().fromJson(response.asString(),EmployeePayrollData.class);
+		employeePayrollData = new Gson().fromJson(response.asString(), EmployeePayrollData.class);
 		employeePayrollService.addEmployeeToPayrollUsingRestIo(employeePayrollData);
-		int entries=employeePayrollService.countEntries();
+		int entries = employeePayrollService.countEntries();
 		Assert.assertEquals(4, entries);
 	}
-	private Response addEmployeeToJsonServer(EmployeePayrollData employeePayrollData) {
-		String empJson=new Gson().toJson(employeePayrollData,EmployeePayrollData.class);
-		RequestSpecification request=RestAssured.given();
+
+	@Test
+	public void given6Employees_WhenAddedShouldMatchCount() throws EmployeePayrollException {
+		EmployeePayrollService employeePayrollService=new EmployeePayrollService(Arrays.asList(getEmployeeList()));
+		EmployeePayrollData[] employeePayrollDataList= {
+				new EmployeePayrollData(0, "Jeff Bezos", 100000.0, "M",LocalDate.now()),
+				new EmployeePayrollData(0, "Bill Gates", 200000.0, "M",LocalDate.now()),
+				new EmployeePayrollData(0, "Mark Zuckerberg", 300000.0, "M", LocalDate.now()),
+				new EmployeePayrollData(0, "Sunder", 600000.0, "M",LocalDate.now()),
+				new EmployeePayrollData(0, "Mukesh", 100000.0, "M",LocalDate.now()),
+				new EmployeePayrollData(0, "Anil", 200000.0, "M",LocalDate.now())
+		};
+		addMultipleEmployees(employeePayrollService,Arrays.asList(employeePayrollDataList));
+		int entries=employeePayrollService.countEntries();
+		Assert.assertEquals(10, entries);
+	}
+
+	private void addMultipleEmployees(EmployeePayrollService employeePayrollService, List<EmployeePayrollData> employeePayrollDataList) {
+		Map<Integer, Boolean> employeeAdditionStatus = new HashMap<Integer, Boolean>();
+		employeePayrollDataList.forEach(employeePayrollData->employeeAdditionStatus.put(employeePayrollData.hashCode(), false));
+		for (EmployeePayrollData employeePayrollData : employeePayrollDataList) {
+			Runnable task = () -> {
+				Response response=this.addEmployeeToJsonServer(employeePayrollData);
+				if(response.getStatusCode()==201) {
+					employeePayrollService.addEmployeeToPayrollUsingRestIo(employeePayrollData);
+				}
+				employeeAdditionStatus.put(employeePayrollData.hashCode(), true);
+			};
+			Thread thread = new Thread(task, employeePayrollData.getName());
+			thread.start();
+		}
+		while (employeeAdditionStatus.containsValue(false)) {
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private synchronized Response addEmployeeToJsonServer(EmployeePayrollData employeePayrollData) {
+		String empJson = new Gson().toJson(employeePayrollData, EmployeePayrollData.class);
+		RequestSpecification request = RestAssured.given();
 		request.header("Content-Type", "application/json");
 		request.body(empJson);
 		return request.post("/employees");
 	}
 
 	private EmployeePayrollData[] getEmployeeList() {
-		Response response=RestAssured.get("/employees");
-		logger.info("Employees in json server: "+response.asString());
-		EmployeePayrollData[] arrayOfEmps=new Gson().fromJson(response.asString(), EmployeePayrollData[].class);
+		Response response = RestAssured.get("/employees");
+		logger.info("Employees in json server: " + response.asString());
+		EmployeePayrollData[] arrayOfEmps = new Gson().fromJson(response.asString(), EmployeePayrollData[].class);
 		return arrayOfEmps;
 	}
 }
