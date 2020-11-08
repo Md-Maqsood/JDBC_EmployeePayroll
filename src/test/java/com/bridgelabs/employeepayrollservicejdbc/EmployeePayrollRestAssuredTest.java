@@ -29,7 +29,7 @@ public class EmployeePayrollRestAssuredTest {
 	}
 
 	@Ignore
-	public void givenNewEmployee_WhenAdded_ShouldMatch201ResponseandCount() throws EmployeePayrollException {
+	public void givenNewEmployee_WhenAdded_ShouldMatch201ResponseandCount(){
 		EmployeePayrollService employeePayrollService = new EmployeePayrollService(Arrays.asList(getEmployeeList()));
 		EmployeePayrollData employeePayrollData = new EmployeePayrollData(0, "Mark", 150000, "M", LocalDate.now());
 		Response response = addEmployeeToJsonServer(employeePayrollData);
@@ -37,12 +37,17 @@ public class EmployeePayrollRestAssuredTest {
 		Assert.assertEquals(201, statusCode);
 		employeePayrollData = new Gson().fromJson(response.asString(), EmployeePayrollData.class);
 		employeePayrollService.addEmployeeToPayrollUsingRestIo(employeePayrollData);
-		int entries = employeePayrollService.countEntries();
+		int entries=-1;
+		try {
+			entries = employeePayrollService.countEntries();
+		} catch (EmployeePayrollException e) {
+			e.printStackTrace();
+		}
 		Assert.assertEquals(4, entries);
 	}
 
 	@Ignore
-	public void given6Employees_WhenAddedShouldMatchCount() throws EmployeePayrollException {
+	public void given6Employees_WhenAddedShouldMatchCount(){
 		EmployeePayrollService employeePayrollService=new EmployeePayrollService(Arrays.asList(getEmployeeList()));
 		EmployeePayrollData[] employeePayrollDataList= {
 				new EmployeePayrollData(0, "Jeff Bezos", 100000.0, "M",LocalDate.now()),
@@ -53,22 +58,44 @@ public class EmployeePayrollRestAssuredTest {
 				new EmployeePayrollData(0, "Anil", 200000.0, "M",LocalDate.now())
 		};
 		addMultipleEmployees(employeePayrollService,Arrays.asList(employeePayrollDataList));
-		int entries=employeePayrollService.countEntries();
+		int entries=-1;
+		try {
+			entries = employeePayrollService.countEntries();
+		} catch (EmployeePayrollException e) {
+			e.printStackTrace();
+		}
 		Assert.assertEquals(10, entries);
 	}
 	
-	@Test
-	public void givenEmployeeDeatails_WhenUpdatedShouldMatchNewSalary() throws EmployeePayrollException {
+	@Ignore
+	public void givenEmployeeDeatails_WhenUpdatedShouldMatchNewSalary() {
 		EmployeePayrollService employeePayrollService = new EmployeePayrollService(Arrays.asList(getEmployeeList()));
 		EmployeePayrollData employeePayrollData = new EmployeePayrollData(2, "Bill Gates", 250000, "M", LocalDate.now());
 		Response response=updateEmployeeDetailsToJsonServer(employeePayrollData);
 		if(response.getStatusCode()==200) {
-			employeePayrollService.updateEmployeeToPayrollUsingRestIo(employeePayrollData);
+			try {
+				employeePayrollService.updateEmployeeToPayrollUsingRestIo(employeePayrollData);
+			} catch (EmployeePayrollException e) {
+				e.printStackTrace();
+			}
 		}
 		double updatedSalary=Arrays.asList(getEmployeeList()).stream()
 				.filter(employee->employee.getName().equals("Bill Gates"))
 				.findFirst().orElse(null).getSalary();
 		Assert.assertEquals(250000.0, updatedSalary,0.0);		
+	}
+	
+	@Test
+	public void givenEmployeeDetailsOnJsonServer_WhenRetrievedShouldMatchCount() {
+		EmployeePayrollData[] arrayOfEmps=this.getEmployeeList();
+		EmployeePayrollService employeePayrollService=new EmployeePayrollService(Arrays.asList(arrayOfEmps));
+		int numOfEmployees=-1;
+		try {
+			numOfEmployees = employeePayrollService.countEntries();
+		} catch (EmployeePayrollException e) {
+			e.printStackTrace();
+		}
+		Assert.assertEquals(3,numOfEmployees);
 	}
 
 	private Response updateEmployeeDetailsToJsonServer(EmployeePayrollData employeePayrollData) {
