@@ -67,18 +67,11 @@ public class EmployeePayrollRestAssuredTest {
 		Assert.assertEquals(10, entries);
 	}
 	
-	@Ignore
+	@Test
 	public void givenEmployeeDeatails_WhenUpdatedShouldMatchNewSalary() {
 		EmployeePayrollService employeePayrollService = new EmployeePayrollService(Arrays.asList(getEmployeeList()));
 		EmployeePayrollData employeePayrollData = new EmployeePayrollData(2, "Bill Gates", 250000, "M", LocalDate.now());
-		Response response=updateEmployeeDetailsToJsonServer(employeePayrollData);
-		if(response.getStatusCode()==200) {
-			try {
-				employeePayrollService.updateEmployeeToPayrollUsingRestIo(employeePayrollData);
-			} catch (EmployeePayrollException e) {
-				e.printStackTrace();
-			}
-		}
+		this.updateEmployeeDetailsToJsonServer(employeePayrollData, employeePayrollService);
 		double updatedSalary=Arrays.asList(getEmployeeList()).stream()
 				.filter(employee->employee.getName().equals("Bill Gates"))
 				.findFirst().orElse(null).getSalary();
@@ -98,7 +91,7 @@ public class EmployeePayrollRestAssuredTest {
 		Assert.assertEquals(3,numOfEmployees);
 	}
 	
-	@Test
+	@Ignore
 	public void givenEmployeeDataOnJsonServer_WhenDeleted_ShouldMatch200StatusCodeAndCount() {
 		EmployeePayrollData[] arrayOfEmps=this.getEmployeeList();
 		EmployeePayrollService employeePayrollService=new EmployeePayrollService(Arrays.asList(arrayOfEmps));
@@ -122,12 +115,19 @@ public class EmployeePayrollRestAssuredTest {
 		return request.delete("/employees/"+employeeIdToBeDeleted);
 	}
 
-	private Response updateEmployeeDetailsToJsonServer(EmployeePayrollData employeePayrollData) {
+	private void updateEmployeeDetailsToJsonServer(EmployeePayrollData employeePayrollData,EmployeePayrollService employeePayrollService) {
 		String empJson = new Gson().toJson(employeePayrollData, EmployeePayrollData.class);
 		RequestSpecification request = RestAssured.given();
 		request.header("Content-Type", "application/json");
 		request.body(empJson);
-		return request.put("/employees/2");
+		Response response=request.put("/employees/2");
+		if(response.getStatusCode()==200) {
+			try {
+				employeePayrollService.updateEmployeeToPayrollUsingRestIo(employeePayrollData);
+			} catch (EmployeePayrollException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private void addMultipleEmployees(EmployeePayrollService employeePayrollService, List<EmployeePayrollData> employeePayrollDataList) {
