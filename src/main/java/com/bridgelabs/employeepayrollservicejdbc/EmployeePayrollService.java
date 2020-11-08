@@ -36,14 +36,23 @@ public class EmployeePayrollService {
 	}
 	
 	public void updateEmployeeToPayrollUsingRestIo(EmployeePayrollData employeePayrollData) throws EmployeePayrollException {
-		EmployeePayrollData employeeToBeUpdated=this.employeePayrollList.stream()
-				.filter(employee->employee.getName().equals(employeePayrollData.getName()))
-				.findFirst().orElse(null);
+		EmployeePayrollData employeeToBeUpdated=this.getEmployeePayrollDataFromList(employeePayrollData.getName());
 		if(employeeToBeUpdated==null) {
 			throw new EmployeePayrollException("No contact found for the given name");
 		}
 		employeeToBeUpdated.setSalary(employeePayrollData.getSalary());
 	}
+	
+	public void deleteEmployeeFromPayrollWithRestIO(int employeeIdToBeDeleted) throws EmployeePayrollException {
+		EmployeePayrollData employeeToBeDeleted=this.employeePayrollList.stream()
+				.filter(employeePayrollObject->employeePayrollObject.getId()==employeeIdToBeDeleted)
+				.findFirst().orElse(null);
+		if(employeeToBeDeleted==null) {
+			throw new EmployeePayrollException("No contact found with the given id");
+		}
+		this.employeePayrollList.remove(employeeToBeDeleted);
+	}
+	
 	
 	public EmployeePayrollData getEmployeePayrollDataFromList(String name) {
 		return this.employeePayrollList.stream()

@@ -85,7 +85,7 @@ public class EmployeePayrollRestAssuredTest {
 		Assert.assertEquals(250000.0, updatedSalary,0.0);		
 	}
 	
-	@Test
+	@Ignore
 	public void givenEmployeeDetailsOnJsonServer_WhenRetrievedShouldMatchCount() {
 		EmployeePayrollData[] arrayOfEmps=this.getEmployeeList();
 		EmployeePayrollService employeePayrollService=new EmployeePayrollService(Arrays.asList(arrayOfEmps));
@@ -96,6 +96,30 @@ public class EmployeePayrollRestAssuredTest {
 			e.printStackTrace();
 		}
 		Assert.assertEquals(3,numOfEmployees);
+	}
+	
+	@Test
+	public void givenEmployeeDataOnJsonServer_WhenDeleted_ShouldMatch200StatusCodeAndCount() {
+		EmployeePayrollData[] arrayOfEmps=this.getEmployeeList();
+		EmployeePayrollService employeePayrollService=new EmployeePayrollService(Arrays.asList(arrayOfEmps));
+		int employeeIdToBeDeleted=2;
+		Response response=this.deleteEmployee(employeeIdToBeDeleted);
+		int statusCode=response.getStatusCode();
+		Assert.assertEquals(200, statusCode);
+		int entriesAfterDeletion=-1;
+		try {
+			employeePayrollService.deleteEmployeeFromPayrollWithRestIO(employeeIdToBeDeleted);
+			entriesAfterDeletion=employeePayrollService.countEntries();
+		} catch (EmployeePayrollException e) {
+			e.printStackTrace();
+		}
+		Assert.assertEquals(2, entriesAfterDeletion);
+	}
+
+	private Response deleteEmployee(int employeeIdToBeDeleted) {
+		RequestSpecification request=RestAssured.given();
+		request.header("Content-Type", "application/json");
+		return request.delete("/employees/"+employeeIdToBeDeleted);
 	}
 
 	private Response updateEmployeeDetailsToJsonServer(EmployeePayrollData employeePayrollData) {
